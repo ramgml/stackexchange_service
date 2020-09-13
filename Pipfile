@@ -37,6 +37,9 @@ zipp = "==3.1.0"
 Mako = "==1.1.3"
 MarkupSafe = "==1.1.1"
 SQLAlchemy = "==1.3.19"
+pytest-aiohttp = "*"
+sqlalchemy-utils = "*"
+pytest-asyncio = "*"
 
 [requires]
 python_version = "3.7"

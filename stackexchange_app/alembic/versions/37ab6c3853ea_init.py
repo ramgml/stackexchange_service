@@ -1,8 +1,8 @@
-"""Init db
+"""Init
 
-Revision ID: db8831f80b07
+Revision ID: 37ab6c3853ea
 Revises: 
-Create Date: 2020-09-05 16:41:23.544023
+Create Date: 2020-09-13 12:11:41.585017
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'db8831f80b07'
+revision = '37ab6c3853ea'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -22,8 +22,8 @@ def upgrade():
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('stackexchange_id', sa.Integer(), nullable=False),
     sa.Column('title', sa.String(length=300), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('link', sa.String(length=400), nullable=False),
+    sa.Column('creation_date', sa.DateTime(timezone=True), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_questions_stackexchange_id'), 'questions', ['stackexchange_id'], unique=True)
@@ -32,7 +32,6 @@ def upgrade():
     sa.Column('topic', sa.String(length=300), nullable=False),
     sa.Column('questions_count', sa.Integer(), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_topics_topic'), 'topics', ['topic'], unique=True)

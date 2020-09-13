@@ -1,22 +1,21 @@
-import os
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
 from alembic import context
+from stackexchange_app.utils import DEFAULT_PG_URL
 
 
-from app.db import meta
+from stackexchange_app.schema import meta
 
-POSTGRES_DB = os.getenv('POSTGRES_DB')
-POSTGRES_USER = os.getenv('POSTGRES_USER')
-POSTGRES_PASSWORD = os.getenv('POSTGRES_PASSWORD')
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
 
-config.set_main_option("sqlalchemy.url", f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@localhost/{POSTGRES_DB}")
+if config.get_main_option("sqlalchemy.url") is None:
+    config.set_main_option("sqlalchemy.url", DEFAULT_PG_URL)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
