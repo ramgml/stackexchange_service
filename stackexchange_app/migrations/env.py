@@ -4,7 +4,7 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
 from alembic import context
-from stackexchange_app.utils import DEFAULT_PG_URL
+from stackexchange_app.settings import DEFAULT_PG_URL
 
 
 from stackexchange_app.schema import meta

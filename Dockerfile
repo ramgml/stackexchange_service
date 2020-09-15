@@ -1,4 +1,4 @@
-FROM python:3.8
+FROM python:3.7
 
 EXPOSE 8080
 
@@ -14,4 +14,4 @@ COPY Pipfile Pipfile.lock /web/
 
 RUN pipenv install --system
 
-CMD ["python", "app/main.py"]
+CMD ["python", "stackexchange_app/main.py"]

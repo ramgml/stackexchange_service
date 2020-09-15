@@ -5,19 +5,15 @@ from yarl import URL
 from alembic.config import Config
 import os
 from types import SimpleNamespace
-from pathlib import Path
+import urllib.parse
+import math
 from stackexchange_app.settings import (
-    POSTGRES_DB,
-    POSTGRES_USER,
-    POSTGRES_PASSWORD,
-    POSTGRES_HOST,
-    POSTGRES_PORT
+    PROJECT_PATH,
+    ASC,
+    DESC
 )
 
 from stackexchange_app import __name__ as project_name
-
-PROJECT_PATH = Path(__file__).parent.parent.resolve()
-DEFAULT_PG_URL = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
 
 
 def make_alembic_config(cmd_opts: SimpleNamespace,
@@ -62,3 +58,33 @@ def tmp_database(db_url: URL, suffix: str = '', **kwargs):
         yield tmp_db_url
     finally:
         drop_database(tmp_db_url)
+
+
+def build_order_link(page, pagesize, order):
+    params = {
+        'page': page,
+        'pagesize': pagesize,
+        'order': ASC if order == DESC else DESC
+    }
+
+    return urllib.parse.urlencode(params)
+
+
+def build_page_link(page, pagesize, order):
+    params = {
+        'page': page,
+        'pagesize': pagesize,
+        'order': order
+    }
+
+    return urllib.parse.urlencode(params)
+
+
+def pagination(total_count, page, pagesize, order):
+    pages_count = math.ceil(total_count / pagesize)
+    for i in range(1, pages_count + 1):
+        yield {
+            'number': i,
+            'current': i == page,
+            'link': build_page_link(i, pagesize, order)
+        }

@@ -3,7 +3,7 @@ from yarl import URL
 from alembic.command import upgrade
 import aiopg.sa
 from stackexchange_app.utils import tmp_database, alembic_config_from_url
-from stackexchange_app.utils import DEFAULT_PG_URL
+from stackexchange_app.settings import DEFAULT_PG_URL
 
 
 @pytest.fixture(scope='session')
