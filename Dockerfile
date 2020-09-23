@@ -14,4 +14,6 @@ COPY Pipfile Pipfile.lock /web/
 
 RUN pipenv install --system
 
-CMD ["python", "stackexchange_app/main.py"]
+RUN chmod +x wait-for-it.sh
+
+RUN chmod +x entrypoint.sh

@@ -1,14 +1,17 @@
 import logging
 from aiohttp import web
+from aiohttp_cache import cache
 import aiohttp_jinja2
 from stackexchange_app import data_manager, db
-from stackexchange_app.settings import ASC, DESC, PAGESIZES, DEFAULT_PAGESIZE, DEFAULT_SORT
+from stackexchange_app.settings import (
+    ASC, DESC, PAGESIZES, DEFAULT_PAGESIZE, DEFAULT_SORT, CACHE_EXPIRES)
 from stackexchange_app.utils import build_order_link, pagination
 
 log = logging.getLogger(__name__)
 
 
 @aiohttp_jinja2.template('index.html')
+@cache(expires=CACHE_EXPIRES)
 async def index(request):
     page = int(request.rel_url.query.get('page', 1))
     pagesize = int(request.rel_url.query.get('pagesize', DEFAULT_PAGESIZE))
@@ -70,6 +73,7 @@ async def search_handler(request):
 
 
 @aiohttp_jinja2.template('questions.html')
+@cache(expires=CACHE_EXPIRES)
 async def topic(request):
     topic_id = request.match_info['topic_id']
     page = int(request.rel_url.query.get('page', 1))

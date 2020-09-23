@@ -41,6 +41,8 @@ pytest-aiohttp = "*"
 sqlalchemy-utils = "*"
 pytest-asyncio = "*"
 aiohttp-jinja2 = "*"
+aiohttp-cache = "*"
+redis = "*"
 
 [requires]
 python_version = "3.7"

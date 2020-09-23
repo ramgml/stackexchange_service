@@ -1,6 +1,11 @@
 import logging
 from aiohttp import web
+from aiohttp_cache import (
+    setup_cache,
+    RedisConfig
+)
 import os
+import yarl
 from stackexchange_app.routes import setup_routes
 from stackexchange_app.db import init_pg, close_pg
 import aiohttp_jinja2
@@ -9,6 +14,16 @@ from stackexchange_app.settings import PROJECT_PATH
 
 
 app = web.Application()
+redis_url = yarl.URL(
+    os.getenv("CACHE_URL", default="redis://localhost:6379/0")
+)
+setup_cache(
+    app,
+    cache_type="redis",
+    backend_config=RedisConfig(
+        db=int(redis_url.path[1:]), host=redis_url.host, port=redis_url.port
+    ),
+)
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
 aiohttp_jinja2.setup(
