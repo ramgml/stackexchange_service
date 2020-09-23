@@ -14,6 +14,7 @@ services:
     links:
       - db
     env_file: .env
+    command: alembic -c stackexchange_app/alembic.ini upgrade head
   db:
     image: postgres:latest
     expose:

@@ -60,9 +60,8 @@ def tmp_database(db_url: URL, suffix: str = '', **kwargs):
         drop_database(tmp_db_url)
 
 
-def build_order_link(page, pagesize, order):
+def build_order_link(pagesize, order):
     params = {
-        'page': page,
         'pagesize': pagesize,
         'order': ASC if order == DESC else DESC
     }

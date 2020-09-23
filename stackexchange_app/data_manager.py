@@ -1,82 +1,121 @@
-from stackexchange_app import db
-from stackexchange_client import client
-from stackexchange_app import settings
+import logging
+from collections import namedtuple
+from stackexchange_app.db import Topic, Question, Page
+from stackexchange_client.client import StackExchange
+
+log = logging.getLogger(__name__)
 
 
-def calc_offset(page, pagesize):
-    return page * pagesize - pagesize
+PageParams = namedtuple('PageParams', ['page', 'size', 'sort', 'order'])
 
 
-async def get_topics(engine, page, pagesize, order):
-    async with engine.acquire() as conn:
-        offset = calc_offset(page, pagesize)
-        topics_query = db.get_topics_page(
-            limit=pagesize,
-            offset=offset,
-            order=order
-        )
-        cursor = await conn.execute(topics_query)
-        topics = await cursor.fetchall()
+class TopicsPage:
+    __slots__ = ('_db_engine', '_page_params', '_total_count', '_items')
 
-        count_query = db.get_total_topics_count()
-        cursor = await conn.execute(count_query)
-        count = await cursor.scalar()
-        return topics, count
+    def __init__(self, db_engine, page_params: PageParams):
+        self._db_engine = db_engine
+        self._page_params = page_params
+        self._total_count = None
+        self._items = []
 
+    async def total_count(self):
+        if self._total_count is None:
+            self._total_count = await Topic.count(self._db_engine)
+        return self._total_count
 
-async def get_topic(engine, topic: str):
-    async with engine.acquire() as conn:
-        query = db.select_topic_by_topic(topic)
-        cursor = await conn.execute(query)
-        return await cursor.fetchone()
-
-
-async def save_topic(connect, topic: dict):
-    query = db.insert_topic(topic)
-    result = await connect.execute(query)
-    return result
+    async def items(self):
+        if not self._items:
+            offset = (self._page_params.page - 1) * self._page_params.size
+            self._items = await Topic.get_topics_page(
+                engine=self._db_engine,
+                limit=self._page_params.size,
+                offset=offset,
+                order=self._page_params.order,
+                sort=self._page_params.sort
+            )
+        return self._items
 
 
-async def get_or_create_topic(engine, topic: str):
-    async with engine.acquire() as conn:
-        existing_topic = await get_topic(conn, topic)
-        if existing_topic is None:
-            topic_data = {
-                'topic': topic,
-                'question_count': 0
+class QuestionsPage:
+    __slots__ = ('_db_engine', '_topic', '_page_params', '_items')
+
+    def __init__(self, db_engine, topic: Topic, page_params: PageParams):
+        self._db_engine = db_engine
+        self._topic = topic
+        self._page_params = page_params
+        self._items = []
+
+    async def items(self):
+        if not self._items:
+            self._items = await Question.select_by_topic_id(
+                engine=self._db_engine,
+                topic_id=self._topic.id,
+                number=self._page_params.page,
+                size=self._page_params.size,
+                order=self._page_params.order
+            )
+
+            if not self._items:
+                topic, questions = await load_from_stackexchange(
+                    query=self._topic.topic,
+                    page_params=self._page_params
+                )
+                self._items = [Question(*q.values()) for q in questions]
+                await save_questions(self._db_engine, questions)
+                await save_questions_page(
+                    engine=self._db_engine,
+                    topic_id=self._topic.id,
+                    questions=questions,
+                    page_params=self._page_params
+                )
+        return self._items
+
+
+async def save_topic(engine, topic_data: dict):
+    return await Topic.insert_topic(engine, topic_data)
+
+
+async def save_questions(engine, questions: list):
+    stackexchange_ids = list(map(
+        lambda q: q['stackexchange_id'], questions
+    ))
+    exist_questions = await Question.select_by_stackexchange_ids(engine, stackexchange_ids)
+    exist_questions_ids = list(map(
+        lambda q: q.stackexchange_id, exist_questions
+    ))
+    new_questions = list(filter(
+        lambda q: q['stackexchange_id'] not in exist_questions_ids, questions
+    ))
+    if new_questions:
+        await Question.insert_questions(engine, new_questions)
+
+
+async def save_questions_page(engine, topic_id: int, questions: list, page_params: PageParams):
+    page = []
+    for question in questions:
+        page.append(
+            {
+                'number': page_params.page,
+                'size': page_params.size,
+                'order': page_params.order,
+                'question_id': question['stackexchange_id'],
+                'topic_id': topic_id
             }
-            saved_topic = await save_topic(conn, topic_data)
-            return saved_topic
+        )
+    if page:
+        await Page.insert_questions_page(engine, page)
 
 
-async def get_topic_questions(engine, topic: str, page, pagesize, sort, order):
-    async with engine.acquire() as conn:
-        existing_topic = await get_topic(conn, topic)
-        if existing_topic is None:
-            search_response = await client.search(topic, page=page, pagesize=pagesize, sort=sort, order=order)
-            return search_response.items
-
-
-async def save_questions(connect, questions: list):
-    result = await connect.execute(db.insert_questions(), questions)
-    return result
-
-
-async def save_topics_questions(connect, topics_questions: list):
-    result = await connect.execute(db.insert_topics_questions(), topics_questions)
-    return result
-
-
-async def get_first_page(engine, topic):
-    response = await client.search(
-        topic,
-        page=1,
-        pagesize=settings.DEFAULT_PAGESIZE,
-        sort=settings.DEFAULT_SORT,
-        order=settings.ASC
+async def load_from_stackexchange(query: str, page_params: PageParams):
+    response = await StackExchange.search(
+        query,
+        page=page_params.page,
+        pagesize=page_params.size,
+        sort=page_params.sort,
+        order=page_params.order
     )
-    topic_data = {
-        'topic': topic,
+    topic = {
+        'topic': query,
         'questions_count': response.total
     }
     questions = []
@@ -87,16 +126,29 @@ async def get_first_page(engine, topic):
             'link': item.link,
             'creation_date': item.creation_date
         })
-    async with engine.acquire() as conn:
-        saved_topic_cursor = await save_topic(conn, topic_data)
-        saved_questions_cursor = await save_questions(conn, questions)
-        topic_id = dict(saved_topic_cursor.fetchrow()).get('id')
-        topics_questions = []
-        for idx, item in enumerate(saved_questions_cursor.fetchall()):
-            topics_questions.append({
-                'topic_id': topic_id,
-                'question_id': dict(item).get('id'),
-                'topic_number': idx + 1
-            })
-        await save_topics_questions(conn, topics_questions)
-    return topic_id
+    return topic, questions
+
+
+class DataManager:
+    __slots__ = ('_db_engine')
+
+    def __init__(self, db_engine):
+        self._db_engine = db_engine
+
+    async def load_new_topic(self, query, page_params: PageParams):
+        topic, questions = await load_from_stackexchange(query, page_params)
+        topic = await save_topic(self._db_engine, topic)
+        await save_questions(self._db_engine, questions)
+        await save_questions_page(
+            engine=self._db_engine,
+            topic_id=topic.id,
+            questions=questions,
+            page_params=page_params
+        )
+        return topic
+
+    def get_topics_page(self, page_params: PageParams):
+        return TopicsPage(self._db_engine, page_params)
+
+    def get_questions_page(self, topic: Topic, page_params: PageParams):
+        return QuestionsPage(self._db_engine, topic, page_params)

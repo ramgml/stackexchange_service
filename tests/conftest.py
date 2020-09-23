@@ -45,6 +45,18 @@ async def postgres_engine(migrated_postgres):
     try:
         yield engine
     finally:
-        pass
         engine.close()
         await engine.wait_closed()
+
+
+@pytest.fixture
+async def api_client(migrated_postgres, aiohttp_client):
+    """
+    Creates aiohttp application and client for it.
+    """
+    app = create_app(migrated_postgres)
+    client = await aiohttp_client(app)
+    try:
+        yield client
+    finally:
+        await client.close()

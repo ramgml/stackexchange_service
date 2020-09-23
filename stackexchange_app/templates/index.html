@@ -19,7 +19,7 @@
           <a class="btn btn-dark" href="/search">Новый запрос</a>
         </div>
         <div class="col-sm">
-          <select name="pagesize">
+          <select name="pagesize" class="pagesize-select">
             {% for size in pagesizes %}
               {% if size == pagesize %}
                 <option selected value="{{size}}">Отображать по {{size}}</option>
@@ -46,7 +46,11 @@
 
           <tr>
             <td>{{topic.created_at}}</td>
-            <td>{{topic.topic}}</td>
+            <td>
+              <a href="/topic/{{topic.id}}">
+              {{topic.topic}}
+              </a>
+            </td>
             <td>{{topic.questions_count}}</td>
           </tr>
           {% endfor %}
@@ -70,5 +74,6 @@
         </ul>
       </nav>
     </div>
+    <script src="{{url('static', filename='main.js')}}"></script>
   </body>
 </html>

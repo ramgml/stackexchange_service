@@ -2,21 +2,11 @@ from sqlalchemy import (
     MetaData, Table, Column, ForeignKey,
     Integer, String, Index, DateTime, func
 )
-from sqlalchemy.orm import (
-    relationship
-)
 
-__all__ = ['topic', 'question', 'topics_questions']
+__all__ = ['topic', 'question', 'questions_page']
 
 meta = MetaData()
 
-topics_questions = Table(
-    'topics_questions', meta,
-    Column('topic_id', Integer, ForeignKey('topics.id'), index=True),
-    Column('question_id', Integer, ForeignKey('questions.id'), index=True),
-    Column('topic_number', Integer, index=True, nullable=False),
-    Index('uix_topics_questions', 'topic_id', 'question_id', unique=True)
-)
 
 topic = Table(
     'topics', meta,
@@ -29,12 +19,20 @@ topic = Table(
 
 question = Table(
     'questions', meta,
-    Column('id', Integer, primary_key=True, autoincrement=True),
-    Column('stackexchange_id', Integer, index=True, unique=True, nullable=False),
+    Column('stackexchange_id', Integer, primary_key=True, unique=True, nullable=False),
     Column('title', String(300), nullable=False),
     Column('link', String(400), nullable=False),
     Column('creation_date', DateTime(timezone=True), nullable=False),
 )
 
 
-topic.questions = relationship('questions', secondary=topics_questions, backref='topics')
+questions_page = Table(
+    'questions_pages', meta,
+    Column('id', Integer, primary_key=True, autoincrement=True),
+    Column('number', Integer, nullable=False),
+    Column('size', Integer, nullable=False),
+    Column('order', String(4), nullable=False),
+    Column('question_id', Integer, ForeignKey('questions.stackexchange_id'), index=True),
+    Column('topic_id', Integer, ForeignKey('topics.id'), index=True),
+    Index('ix__pages__number_size_order', 'number', 'size', 'order', 'topic_id', unique=False)
+)

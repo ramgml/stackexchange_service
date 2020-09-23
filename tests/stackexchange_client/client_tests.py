@@ -1,8 +1,8 @@
-from stackexchange_client import client
+from stackexchange_client.client import StackExchange
 
 
 async def test_search():
-    response = await client.search(
+    response = await StackExchange.search(
         intitle='python',
         page=1,
         pagesize=25,

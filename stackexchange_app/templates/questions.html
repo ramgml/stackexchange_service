@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+      integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z"
+      crossorigin="anonymous"
+    />
+    <title>Index</title>
+  </head>
+  <body>
+    <div class="container mt-5">
+      <div class="row">
+        <div class="col-sm"><h1>Запрос на тему "{{topic}}"</h1></div>
+        <div class="col-sm">
+          <a class="btn btn-dark" href="/search">Новый запрос</a>
+        </div>
+        <div class="col-sm">
+          <select name="pagesize" class="pagesize-select">
+            {% for size in pagesizes %} {% if size == pagesize %}
+            <option selected value="{{size}}">Отображать по {{size}}</option>
+            {% else %}
+            <option value="{{size}}">Отображать по {{size}}</option>
+            {% endif %} {% endfor %}
+          </select>
+        </div>
+      </div>
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">
+              <a href="?{{order_link}}">Дата</a>
+
+              {% if order == 'asc' %} &#9650; {% else %} &#9660; {% endif %}
+            </th>
+            <th scope="col">Заголовок</th>
+            <th scope="col">Ссылка</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for question in questions %}
+          <tr>
+            <td>{{question.creation_date}}</td>
+            <td>{{question.title | safe}}</td>
+            <td>
+              <a href="{{question.link}}"> {{question.link}} </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% for page in pagination %} {% if page.current %}
+      <span>{{page.number}}</span>
+      {%else%}
+      <a href="?{{page.link}}">{{page.number}}</a>
+      {%endif%} {% endfor %}
+    </div>
+    <script src="{{url('static', filename='main.js')}}"></script>
+  </body>
+</html>

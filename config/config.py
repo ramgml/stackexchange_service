@@ -1,2 +1,0 @@
-config = {}
-config['db'] = None
