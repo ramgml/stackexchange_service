@@ -19,3 +19,6 @@ DEFAULT_PAGESIZE = 25
 PAGESIZES = [25, 50, 100]
 
 CACHE_EXPIRES = 60
+CACHE_URL = os.getenv("CACHE_URL", default="redis://localhost:6379/0")
+WS_SERVER_URL = os.getenv('WS_SERVER_URL', 'ws://localhost:4000')
+CRON_TASK_DELAY = os.getenv('CRON_TASK_DELAY', '*/10')

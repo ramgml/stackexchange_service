@@ -132,3 +132,31 @@ async def test_select_questions_by_topic_id(postgres_engine):
     await db.Page.insert_questions_page(postgres_engine, page)
     selected_questions = await db.Question.select_by_topic_id(postgres_engine, topic.id, 1, 25, 'desc')
     assert len(selected_questions) == 2
+
+
+@pytest.mark.asyncio
+async def test_select_pages(postgres_engine):
+    topic = await db.Topic.insert_topic(postgres_engine, TOPIC)
+    questions = await db.Question.insert_questions(postgres_engine, QUESTIONS)
+    page = []
+    for q in questions:
+        page.append(
+            {
+                'number': 1,
+                'size': 25,
+                'order': 'desc',
+                'question_id': q.stackexchange_id,
+                'topic_id': topic.id
+            }
+        )
+    await db.Page.insert_questions_page(postgres_engine, page)
+    pages = await db.Page.select_pages(postgres_engine)
+    assert len(pages) == 1
+
+
+@pytest.mark.asyncio
+async def test_update_topic(postgres_engine):
+    topic = await db.Topic.insert_topic(postgres_engine, TOPIC)
+    await db.Topic.update_topic(postgres_engine, topic.id, 10000)
+    topic = await db.Topic.select_by_id(postgres_engine, topic.id)
+    assert topic.questions_count == 10000

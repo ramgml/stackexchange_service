@@ -10,13 +10,11 @@ from stackexchange_app.routes import setup_routes
 from stackexchange_app.db import init_pg, close_pg
 import aiohttp_jinja2
 import jinja2
-from stackexchange_app.settings import PROJECT_PATH
+from stackexchange_app.settings import PROJECT_PATH, CACHE_URL
 
 
 app = web.Application()
-redis_url = yarl.URL(
-    os.getenv("CACHE_URL", default="redis://localhost:6379/0")
-)
+redis_url = yarl.URL(CACHE_URL)
 setup_cache(
     app,
     cache_type="redis",

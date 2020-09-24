@@ -87,7 +87,8 @@ async def save_questions(engine, questions: list):
         lambda q: q['stackexchange_id'] not in exist_questions_ids, questions
     ))
     if new_questions:
-        await Question.insert_questions(engine, new_questions)
+        return await Question.insert_questions(engine, new_questions)
+    return []
 
 
 async def save_questions_page(engine, topic_id: int, questions: list, page_params: PageParams):

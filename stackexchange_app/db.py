@@ -88,6 +88,21 @@ class Topic:
             topics = await cursor.fetchall()
             return [Topic(*t.as_tuple()) for t in topics]
 
+    @staticmethod
+    async def get_topics(engine):
+        async with engine.acquire() as conn:
+            sql = schema.topic.select()
+            cursor = await conn.execute(sql)
+            topics = await cursor.fetchall()
+            return [Topic(*t.as_tuple()) for t in topics]
+
+    @staticmethod
+    async def update_topic(engine, topic_id, questions_count):
+        async with engine.acquire() as conn:
+            sql = schema.topic.update().where(schema.topic.c.id == topic_id).\
+                values({'questions_count': questions_count})
+            await conn.execute(sql)
+
 
 class Question:
     def __init__(self, stackexchange_id, title, link, creation_date):
@@ -158,5 +173,17 @@ class Page:
         async with engine.acquire() as conn:
             sql = schema.questions_page.insert().values(questions_page).\
                 returning(literal_column('*'))
+            cursor = await conn.execute(sql)
+            return await cursor.fetchall()
+
+    @staticmethod
+    async def select_pages(engine):
+        async with engine.acquire() as conn:
+            sql = schema.questions_page.select().distinct(
+                schema.questions_page.c.number,
+                schema.questions_page.c.size,
+                schema.questions_page.c.order,
+                schema.questions_page.c.topic_id
+            )
             cursor = await conn.execute(sql)
             return await cursor.fetchall()
